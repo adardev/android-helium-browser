@@ -93,4 +93,44 @@ if (content::WebContents::HasLiveWebContentsForBrowserContext(profile)) { return
 sed -i 's/|| mSupportedProfileType == SupportedProfileType.REGULAR) {/|| mSupportedProfileType == SupportedProfileType.REGULAR || mSupportedProfileType == SupportedProfileType.MIXED) {/' chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
 sed -i 's/|| mSupportedProfileType == SupportedProfileType.OFF_THE_RECORD) {/|| mSupportedProfileType == SupportedProfileType.OFF_THE_RECORD || mSupportedProfileType == SupportedProfileType.MIXED) {/' chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
 
+# Force display cutout to extend to short edges by default when in immersive mode / drawing under notch
+python3 -c '
+import sys
+file_path = "components/browser_ui/display_cutout/android/java/src/org/chromium/components/browser_ui/display_cutout/DisplayCutoutController.java"
+with open(file_path, "r") as f:
+    code = f.read()
+
+target_mode = """        // Never draw under notch if it is not in fullscreen mode.
+        if (!assumeNonNull(mDelegate.getWebContents()).isFullscreenForCurrentTab()) {
+            return LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
+        }
+
+        return switch (mViewportFit) {
+            case ViewportFit.CONTAIN -> LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
+            case ViewportFit.COVER_FORCED_BY_USER_AGENT, ViewportFit.COVER -> LayoutParams
+                    .LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            default -> LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
+        };"""
+
+replacement_mode = """        return LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;"""
+
+target_observer = """        mWindow = activity.getWindow();
+    }"""
+
+replacement_observer = """        mWindow = activity.getWindow();
+        maybeUpdateLayout();
+    }"""
+
+if target_mode in code and target_observer in code:
+    code = code.replace(target_mode, replacement_mode)
+    code = code.replace(target_observer, replacement_observer)
+    with open(file_path, "w") as f:
+        f.write(code)
+    print("SUCCESS: DisplayCutoutController patched.")
+else:
+    print("ERROR: DisplayCutoutController targets not found.")
+    sys.exit(1)
+'
+
 export PATCHED=1
+
