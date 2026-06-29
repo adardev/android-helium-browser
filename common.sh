@@ -7,8 +7,16 @@ replace() {
 
 set_keys() {
     mkdir -p $SCRIPT_DIR/keys
-    echo $LOCAL_TEST_JKS | base64 -d > $SCRIPT_DIR/keys/local.properties
-    echo $STORE_TEST_JKS | base64 -d > $SCRIPT_DIR/keys/test.jks
+    if [ -z "$LOCAL_TEST_JKS" ] || [ -z "$STORE_TEST_JKS" ]; then
+        echo "No signing keys provided, generating a temporary test keystore..."
+        keytool -genkeypair -v -keystore $SCRIPT_DIR/keys/test.jks -keyalg RSA -keysize 2048 -validity 10000 -alias testkey -keypass testpassword -storepass testpassword -dname "CN=Test, O=Test, C=US" -storetype PKCS12
+        echo "keyAlias=testkey" > $SCRIPT_DIR/keys/local.properties
+        echo "keyPassword=testpassword" >> $SCRIPT_DIR/keys/local.properties
+        echo "storePassword=testpassword" >> $SCRIPT_DIR/keys/local.properties
+    else
+        echo $LOCAL_TEST_JKS | base64 -d > $SCRIPT_DIR/keys/local.properties
+        echo $STORE_TEST_JKS | base64 -d > $SCRIPT_DIR/keys/test.jks
+    fi
     unset LOCAL_TEST_JKS
     unset STORE_TEST_JKS
 }
