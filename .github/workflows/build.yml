@@ -62,6 +62,18 @@ jobs:
         run: |
           ./build.sh
 
+      - name: Print build errors
+        if: failure()
+        run: |
+          if [ -f chromium/src/out/Default/siso_output ]; then
+            echo "=== siso_output ==="
+            cat chromium/src/out/Default/siso_output
+          fi
+          if [ -f chromium/src/out/Default/siso.INFO ]; then
+            echo "=== siso.INFO (last 100 lines) ==="
+            tail -n 100 chromium/src/out/Default/siso.INFO
+          fi
+
       - name: Set
         run: |
           export VERSION=$(find chromium/src/out/release -name '*arm64-v8a.apk' | sed 's/.*\///;s/\-arm64-v8a.apk$//')
