@@ -36,3 +36,4 @@ include_both_v8_snapshots = false
 include_both_v8_snapshots_android_secondary_abi = false
 generate_linker_map = true
 treat_warnings_as_errors = false
+use_thinlto = false
